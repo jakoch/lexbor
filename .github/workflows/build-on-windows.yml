@@ -50,6 +50,8 @@ jobs:
                 -S .                                                                        ^
                 -B ..\build                                                                 ^
                 -DCMAKE_BUILD_TYPE=%BUILD_TYPE%                                             ^
+                -DCMAKE_C_FLAGS="-utf-8 -W4 -EHsc -permissive- -nologo"                     ^
+                -DLEXBOR_BUILD_WITH_ASAN=ON                                                 ^
                 -DLEXBOR_BUILD_TESTS=ON                                                     ^
                 -DLEXBOR_BUILD_SHARED=${{ matrix.config.LEXBOR_BUILD_SHARED }}              ^
                 -DLEXBOR_BUILD_STATIC=${{ matrix.config.LEXBOR_BUILD_STATIC }}              ^
