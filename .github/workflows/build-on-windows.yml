@@ -1,0 +1,66 @@
+#
+# .github/workflows/build-on-windows.yml
+#
+# Copyright 2021 Jens A. Koch.
+# SPDX-License-Identifier: Apache-2.0
+# This file is part of lexbor.
+#
+
+name: "Build on Windows"
+
+on: [push, pull_request]
+
+jobs:
+
+# ---------------------------------------------------------------------------------------
+
+  build-and-test:
+
+# ---------------------------------------------------------------------------------------
+
+    name: ${{ matrix.config.TRIPLET }} SHARED:${{ matrix.config.LEXBOR_BUILD_SHARED }}
+    # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { TRIPLET: x64-windows,        LEXBOR_BUILD_SHARED: ON, LEXBOR_BUILD_STATIC: OFF}
+          - { TRIPLET: x64-windows-static, LEXBOR_BUILD_SHARED: OFF, LEXBOR_BUILD_STATIC: ON}
+
+    env:
+      BUILD_TYPE: RelWithDebInfo
+      PLATFORM: x64
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v2 # https://github.com/actions/checkout
+
+      - name: 📥 Setup VC Environment (➔ vcvarsall)
+        run: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %PLATFORM%
+
+      - name: ✏ CMake ➔ Configure
+        run: |
+          cmake -G "Visual Studio 16 2019" -A ${{ env.PLATFORM }}                           ^
+                -S .                                                                        ^
+                -B ..\build                                                                 ^
+                -DCMAKE_BUILD_TYPE=%BUILD_TYPE%                                             ^
+                -DLEXBOR_BUILD_SHARED=${{ matrix.config.LEXBOR_BUILD_SHARED }}              ^
+                -DLEXBOR_BUILD_STATIC=${{ matrix.config.LEXBOR_BUILD_STATIC }}              ^
+                -DCMAKE_VERBOSE_MAKEFILE=ON
+
+      - name: 🙏 CMake ➔ Build
+        run: cmake --build ..\build --config %BUILD_TYPE% -j %NUMBER_OF_PROCESSORS%
+
+      - name: 📦 CMake ➔ Install
+        run: cmake --install ..\build --config %BUILD_TYPE% --prefix install --verbose
+
+      - name: ❔ CHECK important folders, to see if everything is present (after building)
+        run: |
+          dir /S /B build
+          dir /S /B install
